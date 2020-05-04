@@ -1,4 +1,4 @@
-module TrawlNet {
+module TrawlNet { 
 
   exception FileDoesNotExistError {
     string info;
