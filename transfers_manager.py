@@ -3,26 +3,24 @@
 
 import sys
 import Ice
-Ice.loadSlice('-I. --all Trawlnet.ice') 
-import Trawlnet
+Ice.loadSlice('-I. --all trawlnet.ice') 
+import TrawlNet
 
 
-class PrinterI(Example.Printer):
-    n = 0
+class TransferI(TrawlNet.Transfer):
 
-    def write(self, message, current=None):
-        print("{0}: {1}".format(self.n, message))
+    def destroy():
+        print("Hola")
         sys.stdout.flush()
-        self.n += 1
 
 
 class Server(Ice.Application):
     def run(self, argv):
         broker = self.communicator()
-        servant = PrinterI()
+        servant = TransferI()
 
-        adapter = broker.createObjectAdapter("PrinterAdapter")
-        proxy = adapter.add(servant, broker.stringToIdentity("printer1"))
+        adapter = broker.createObjectAdapter("Transfer1Adapter")
+        proxy = adapter.add(servant, broker.stringToIdentity("transfer1"))
 
         print(proxy, flush=True)
 

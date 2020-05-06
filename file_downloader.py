@@ -3,25 +3,28 @@
 
 import sys
 import Ice
-Ice.loadSlice('-I. --all Trawlnet.ice') 
-import Trawlnet
+Ice.loadSlice('-I. --all trawlnet.ice') 
+import TrawlNet
 
 
 class Client(Ice.Application):
     def run(self, argv):
         proxy = self.communicator().stringToProxy(argv[1])
-        TransFactory = Example.TransferFactoryPrx.checkedCast(proxy)
+        TransFactory = TrawlNet.TransferPrx.checkedCast(proxy)
 
-        if not factory:
+        if not TransFactory:
             raise RuntimeError('Invalid proxy')
 
         #adapter = broker.createObjectAdapter("PrinterAdapter")
         #proxy = adapter.add(servant, broker.stringToIdentity("printer1"))
 
-        printer = factory.make("transfer1")
-        printer.write('Conseguido!')
+        TransFactory.destroy()
 
         return 0
+
+
+class ReceiverFactoryI(TrawlNet.ReceiverFactory):
+    def create(fileName, sender, transfer):
 
 
 sys.exit(Client().main(sys.argv))
