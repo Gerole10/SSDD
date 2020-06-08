@@ -6,6 +6,20 @@ import Ice
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
 
+class ReceiverI(TrawlNet.Receiver):
+    def start():
+        pass
+
+    def destroy():
+        pass
+
+class ReceiverFactoryI(TrawlNet.ReceiverFactory):
+    def create(self, fileName, sender, transfer ,current = None):
+        print("Receiver Factory"+ fileName)
+        servant = ReceiverI()
+        proxy = current.adapter.addWithUUID(servant)
+        return TrawlNet.ReceiverPrx.checkedCast(proxy)
+
 
 class Client(Ice.Application):
     def run(self, argv):
@@ -15,8 +29,8 @@ class Client(Ice.Application):
         if not transferFactory:
             raise RuntimeError('Invalid proxy transferFactory')
 
-
-        transferFactory.newTransfer("hola")
+        receiverFactory = ReceiverFactoryI()
+        transferFactory.newTransfer(receiverFactory)
         
         return 0
         

@@ -18,7 +18,7 @@ class TransferI(TrawlNet.Transfer):
         sys.stdout.flush()
 
 class TransferFactoryI(TrawlNet.TransferFactory):
-    def newTransfer(self, recieverFactory, current = None):
+    def newTransfer(self, receiverFactory, current = None):
         print("Papi")
         servant = TransferI()
         proxy = current.adapter.addWithUUID(servant)
