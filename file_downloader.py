@@ -14,6 +14,9 @@ class ReceiverI(TrawlNet.Receiver):
         pass
 
 class ReceiverFactoryI(TrawlNet.ReceiverFactory):
+    def __init__(self):
+        print("Constructor receiverFactory")
+
     def create(self, fileName, sender, transfer ,current = None):
         print("Receiver Factory"+ fileName)
         servant = ReceiverI()
@@ -29,8 +32,14 @@ class Client(Ice.Application):
         if not transferFactory:
             raise RuntimeError('Invalid proxy transferFactory')
 
-        receiverFactory = ReceiverFactoryI()
-        transferFactory.newTransfer(receiverFactory)
+        
+        broker = self.communicator()
+        servant = ReceiverFactoryI()
+
+        adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
+        proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))
+        print(proxy)
+        transfer = transferFactory.newTransfer(proxy)
         
         return 0
         
