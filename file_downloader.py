@@ -9,22 +9,15 @@ import TrawlNet
 
 class Client(Ice.Application):
     def run(self, argv):
-        proxy = self.communicator().stringToProxy(argv[1])
-        TransFactory = TrawlNet.TransferPrx.checkedCast(proxy)
+        proxyTransfer = self.communicator().stringToProxy(argv[1])
+        transferFactory = TrawlNet.TransferFactoryPrx.checkedCast(proxyTransfer)
 
-        if not TransFactory:
-            raise RuntimeError('Invalid proxy')
+        if not transferFactory:
+            raise RuntimeError('Invalid proxy transferFactory')
 
-        #adapter = broker.createObjectAdapter("PrinterAdapter")
-        #proxy = adapter.add(servant, broker.stringToIdentity("printer1"))
 
-        TransFactory.destroy()
-
+        transferFactory.newTransfer("hola")
+        
         return 0
-
-
-class ReceiverFactoryI(TrawlNet.ReceiverFactory):
-    def create(fileName, sender, transfer):
-
-
+        
 sys.exit(Client().main(sys.argv))

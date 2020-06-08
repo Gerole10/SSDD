@@ -8,19 +8,39 @@ import TrawlNet
 
 
 class TransferI(TrawlNet.Transfer):
-
+    def createPeers(files):
+        pass    
+    def destroyPeer(peerId):
+        pass
+    
     def destroy():
         print("Hola")
         sys.stdout.flush()
 
+class TransferFactoryI(TrawlNet.TransferFactory):
+    def newTransfer(self, recieverFactory, current = None):
+        print("Papi")
+        servant = TransferI()
+        proxy = current.adapter.addWithUUID(servant)
+        return TrawlNet.TransferPrx.checkedCast(proxy)
 
 class Server(Ice.Application):
     def run(self, argv):
-        broker = self.communicator()
-        servant = TransferI()
+        #Conexion con sender_factory
+        proxySender = self.communicator().stringToProxy(argv[1])
+        senderFactory = TrawlNet.SenderFactoryPrx.checkedCast(proxySender)
 
-        adapter = broker.createObjectAdapter("Transfer1Adapter")
-        proxy = adapter.add(servant, broker.stringToIdentity("transfer1"))
+        if not senderFactory:
+            raise RuntimeError('Invalid proxy for senderFactory')
+
+        senderFactory.create("nombreArchivo")
+
+        #Configuracion del proxy
+        broker = self.communicator()
+        servant = TransferFactoryI()
+
+        adapter = broker.createObjectAdapter("TransferFactoryAdapter")
+        proxy = adapter.add(servant, broker.stringToIdentity("transferFactory1"))
 
         print(proxy, flush=True)
 
