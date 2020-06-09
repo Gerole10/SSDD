@@ -40,8 +40,24 @@ class Client(Ice.Application):
         proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))
         print(proxy)
         transfer = transferFactory.newTransfer(TrawlNet.ReceiverFactoryPrx.checkedCast(proxy))
-        print(transfer)
+        print(transfer)    
         adapter.activate()
+
+        files = Client.crearListaFiles(argv)
+        #transfer.createPeers(files)
+
+
         return 0
+
+    def crearListaFiles(argv):
+        files = []
+        if len(argv) > 2:
+            for i in range(2, len(argv)):
+                files.append(argv[i])
+                print(argv[i])
+        else:
+            print("Introduzca los archivos por parametros")
+        print(files)
+        return files
         
 sys.exit(Client().main(sys.argv))
