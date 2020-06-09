@@ -39,8 +39,9 @@ class Client(Ice.Application):
         adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))
         print(proxy)
-        transfer = transferFactory.newTransfer(proxy)
-        
+        transfer = transferFactory.newTransfer(TrawlNet.ReceiverFactoryPrx.checkedCast(proxy))
+        print(transfer)
+        adapter.activate()
         return 0
         
 sys.exit(Client().main(sys.argv))

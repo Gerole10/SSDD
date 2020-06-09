@@ -8,19 +8,25 @@ import TrawlNet
 
 
 class TransferI(TrawlNet.Transfer):
-    def createPeers(files):
+    def __init__(self, receiverFactory, senderFactory):
+        self.receiverFactory = receiverFactory
+        self.senderFactory = senderFactory
+
+    def createPeers(self, files):
         pass    
-    def destroyPeer(peerId):
+
+    def destroyPeer(self, peerId):
         pass
     
-    def destroy():
-        print("Hola")
-        sys.stdout.flush()
+    def destroy(self):
+        pass
 
 class TransferFactoryI(TrawlNet.TransferFactory):
+    def __init__(self, senderFactory):
+        self.senderFactory = senderFactory
+
     def newTransfer(self, receiverFactory, current = None):
-        print("Papi")
-        servant = TransferI()
+        servant = TransferI(receiverFactory, self.senderFactory)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.TransferPrx.checkedCast(proxy)
 
@@ -37,7 +43,7 @@ class Server(Ice.Application):
 
         #Configuracion del proxy
         broker = self.communicator()
-        servant = TransferFactoryI()
+        servant = TransferFactoryI(senderFactory)
 
         adapter = broker.createObjectAdapter("TransferFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("transferFactory1"))

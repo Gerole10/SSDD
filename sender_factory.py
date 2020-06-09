@@ -8,10 +8,15 @@ import TrawlNet
 
 
 class SenderI(TrawlNet.Sender):
+    def __init__(self, fileName):
+        self.fileName = fileName
+
     def receive(size):
         pass
+
     def close():
         pass
+
     def destroy():
         print("Hola")
         sys.stdout.flush()
@@ -19,7 +24,7 @@ class SenderI(TrawlNet.Sender):
 class SenderFactoryI(TrawlNet.SenderFactory):
     def create(self, fileName, current = None):
         print("Papi Sender"+ fileName)
-        servant = SenderI()
+        servant = SenderI(fileName)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.SenderPrx.checkedCast(proxy)
 
