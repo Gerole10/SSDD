@@ -7,8 +7,15 @@ Ice.loadSlice('-I. --all trawlnet.ice')
 import TrawlNet
 
 class ReceiverI(TrawlNet.Receiver):
-    def start():
-        pass
+    def __init__(self, fileName, sender, transfer):
+        self.fileName = fileName
+        self.sender = sender
+        self.transfer = transfer
+    
+    def start(self, current = None):
+        print("Recevier del archivo: "+self.fileName)
+        print(self.sender)
+        print(self.transfer)
 
     def destroy():
         pass
@@ -18,8 +25,8 @@ class ReceiverFactoryI(TrawlNet.ReceiverFactory):
         print("Constructor receiverFactory")
 
     def create(self, fileName, sender, transfer ,current = None):
-        print("Receiver Factory"+ fileName)
-        servant = ReceiverI()
+        print("Creacion receiver "+ fileName)
+        servant = ReceiverI(fileName, sender, transfer)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.ReceiverPrx.checkedCast(proxy)
 
@@ -44,9 +51,13 @@ class Client(Ice.Application):
         adapter.activate()
 
         files = Client.createListFiles(argv)
+        print(files)
         receiverList = transfer.createPeers(files)
-        print(receiverList)
 
+        for receiver in receiverList:
+            receiver.start()
+        
+        print(receiverList)
         return 0
 
     def createListFiles(argv):
@@ -56,7 +67,6 @@ class Client(Ice.Application):
                 files.append(argv[i])
         else:
             print("Introduzca los archivos por parametros")
-        print(files)
         return files
         
 sys.exit(Client().main(sys.argv))
