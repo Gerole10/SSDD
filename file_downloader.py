@@ -33,25 +33,32 @@ class ReceiverFactoryI(TrawlNet.ReceiverFactory):
 
 class Client(Ice.Application):
     def run(self, argv):
+
+        #Conexion con transferFactory
         proxyTransfer = self.communicator().stringToProxy(argv[1])
         transferFactory = TrawlNet.TransferFactoryPrx.checkedCast(proxyTransfer)
 
         if not transferFactory:
             raise RuntimeError('Invalid proxy transferFactory')
 
-        
+        #Creacion proxy receiverFactory
         broker = self.communicator()
         servant = ReceiverFactoryI()
 
         adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))
         print(proxy)
+
+        #Creacion transfer
         transfer = transferFactory.newTransfer(TrawlNet.ReceiverFactoryPrx.checkedCast(proxy))
         print(transfer)    
         adapter.activate()
 
+        #Creacion lista archivos
         files = Client.createListFiles(argv)
         print(files)
+
+        #Generacion de peers
         receiverList = transfer.createPeers(files)
 
         for receiver in receiverList:
