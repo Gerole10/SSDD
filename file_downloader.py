@@ -43,18 +43,17 @@ class Client(Ice.Application):
         print(transfer)    
         adapter.activate()
 
-        files = Client.crearListaFiles(argv)
-        #transfer.createPeers(files)
-
+        files = Client.createListFiles(argv)
+        receiverList = transfer.createPeers(files)
+        print(receiverList)
 
         return 0
 
-    def crearListaFiles(argv):
+    def createListFiles(argv):
         files = []
         if len(argv) > 2:
             for i in range(2, len(argv)):
                 files.append(argv[i])
-                print(argv[i])
         else:
             print("Introduzca los archivos por parametros")
         print(files)

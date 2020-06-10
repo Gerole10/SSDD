@@ -23,7 +23,7 @@ class SenderI(TrawlNet.Sender):
 
 class SenderFactoryI(TrawlNet.SenderFactory):
     def create(self, fileName, current = None):
-        print("Papi Sender"+ fileName)
+        print("Creacion Sender para:"+ fileName)
         servant = SenderI(fileName)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.SenderPrx.checkedCast(proxy)

@@ -8,12 +8,19 @@ import TrawlNet
 
 
 class TransferI(TrawlNet.Transfer):
-    def __init__(self, receiverFactory, senderFactory):
+    def __init__(self, receiverFactory, senderFactory, transfer = None):
         self.receiverFactory = receiverFactory
         self.senderFactory = senderFactory
+        self.transfer = transfer
 
-    def createPeers(self, files):
-        pass    
+    def createPeers(self, files, current = None):
+        receiverList = []
+        for file in files:
+            print("Creacion peer archivo "+file)
+            sender = self.senderFactory.create(file)
+            receiver = self.receiverFactory.create(file, sender, self.transfer)
+            receiverList.append(receiver)
+        return receiverList
 
     def destroyPeer(self, peerId):
         pass
@@ -28,7 +35,10 @@ class TransferFactoryI(TrawlNet.TransferFactory):
     def newTransfer(self, receiverFactory, current = None):
         servant = TransferI(receiverFactory, self.senderFactory)
         proxy = current.adapter.addWithUUID(servant)
-        return TrawlNet.TransferPrx.checkedCast(proxy)
+        transferPrx = TrawlNet.TransferPrx.checkedCast(proxy)
+        servant.transfer = transferPrx
+
+        return transferPrx
 
 class Server(Ice.Application):
     def run(self, argv):
@@ -39,7 +49,7 @@ class Server(Ice.Application):
         if not senderFactory:
             raise RuntimeError('Invalid proxy for senderFactory')
 
-        senderFactory.create("nombreArchivo")
+        #senderFactory.create("nombreArchivo")
 
         #Configuracion del proxy
         broker = self.communicator()
