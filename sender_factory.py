@@ -34,9 +34,8 @@ class SenderFactoryI(TrawlNet.SenderFactory):
 
         try:
             prueba = open("./files_sended/"+fileName, 'r').readline()
-            prueba.close()
-        except FileNotFoundError:
-            raise FileNotFoundError
+        except FileNotFoundError as e:
+            raise FileNotFoundError("Archivo especificado no encontrado")
         
         servant = SenderI(fileName)
         proxy = current.adapter.addWithUUID(servant)
