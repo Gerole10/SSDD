@@ -31,6 +31,13 @@ class SenderI(TrawlNet.Sender):
 class SenderFactoryI(TrawlNet.SenderFactory):
     def create(self, fileName, current = None):
         print("Creacion Sender para:"+ fileName)
+
+        try:
+            prueba = open("./files_sended/"+fileName, 'r').readline()
+            prueba.close()
+        except FileNotFoundError:
+            raise FileNotFoundError
+        
         servant = SenderI(fileName)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.SenderPrx.checkedCast(proxy)

@@ -17,9 +17,12 @@ class TransferI(TrawlNet.Transfer):
         receiverList = []
         for file in files:
             print("Creacion peer archivo "+file)
-            sender = self.senderFactory.create(file)
-            receiver = self.receiverFactory.create(file, sender, self.transfer)
-            receiverList.append(receiver)
+            try:
+                sender = self.senderFactory.create(file)
+                receiver = self.receiverFactory.create(file, sender, self.transfer)
+                receiverList.append(receiver)
+            except FileNotFoundError:
+                print("No se encuentra el archivo especificado")
         return receiverList
 
     def destroyPeer(self, peerId):
