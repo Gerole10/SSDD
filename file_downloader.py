@@ -7,13 +7,25 @@ import Ice
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
 
+
+
+class PeerEventI(TrawlNet.PeerEvent):
+    def peerFinished(self, peerInfo, current = None):
+        print("Notificando al transfer")
+        peerInfo.transfer.destroyPeer(peerInfo.fileName)
+
+class PeerInfoI(TrawlNet.PeerInfo):
+    def __init__(self, transfer, fileName):
+        self.transfer = transfer
+        self.fileName = fileName
+
 class ReceiverI(TrawlNet.Receiver):
     def __init__(self, fileName, sender, transfer):
         self.fileName = fileName
         self.sender = sender
         self.transfer = transfer
         self.puntero = 0
-    
+
     def start(self, current = None):
         print("Recevier del archivo: "+self.fileName)
         print(self.sender)
@@ -29,7 +41,17 @@ class ReceiverI(TrawlNet.Receiver):
             self.puntero += 10
             if len(lectura) < 10:
                 print("Transferencia de "+self.fileName+" completada.")
+                #Cerrar el archivo falta
                 break
+        
+        #Crear PeerInfo(Transfer, filename)
+        print("Creando peerInfo")
+        peerInfo = PeerInfoI(self.transfer, self.fileName)
+        #Crear PeerEvent y llamar a peerFinished
+        print("Creando peerEvent")
+        peerEvent = PeerEventI()
+        print("Llamado metodo peerFinished")
+        peerEvent.peerFinished(peerInfo)
 
 
     def destroy():
