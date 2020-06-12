@@ -21,7 +21,7 @@ class SenderI(TrawlNet.Sender):
         return archivo.read(size)
 
     def close():
-        archivo = open(self.fileName,"r")
+        archivo = open(self.fileName,"r") 
         archivo.close()
 
     def destroy():
