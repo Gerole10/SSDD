@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from io import open
 import Ice
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
@@ -10,12 +11,18 @@ import TrawlNet
 class SenderI(TrawlNet.Sender):
     def __init__(self, fileName):
         self.fileName = fileName
+        self.puntero = 0
 
-    def receive(size):
-        pass
+    def receive(self,size,current = None):
+        archivo = open("./files_sended/"+self.fileName,"r")
+        archivo.seek(self.puntero)
+        print("Archivo "+self.fileName+" encontrado, leyendo...")
+        self.puntero += size
+        return archivo.read(size)
 
     def close():
-        pass
+        archivo = open(self.fileName,"r")
+        archivo.close()
 
     def destroy():
         print("Hola")

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from io import open
 import Ice
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
@@ -11,11 +12,25 @@ class ReceiverI(TrawlNet.Receiver):
         self.fileName = fileName
         self.sender = sender
         self.transfer = transfer
+        self.puntero = 0
     
     def start(self, current = None):
         print("Recevier del archivo: "+self.fileName)
         print(self.sender)
         print(self.transfer)
+
+        ar = open("./files_received/"+self.fileName,"w")
+
+        while True:
+            ar.seek(self.puntero)
+            lectura = self.sender.receive(10)
+            print("Archivo "+self.fileName+" recibiéndose, escribiendo...")
+            ar.write(lectura)
+            self.puntero += 10
+            if len(lectura) < 10:
+                print("Transferencia de "+self.fileName+" completada.")
+                break
+
 
     def destroy():
         pass
