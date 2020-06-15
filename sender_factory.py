@@ -9,20 +9,23 @@ import TrawlNet
 
 
 class SenderI(TrawlNet.Sender):
+    archivo = ""
+
     def __init__(self, fileName):
         self.fileName = fileName
         self.puntero = 0
+        
 
     def receive(self,size,current = None):
-        archivo = open("./files_sended/"+self.fileName,"r")
-        archivo.seek(self.puntero)
+        self.archivo = open("./files_sended/"+self.fileName,"r")
+        self.archivo.seek(self.puntero)
         print("Archivo "+self.fileName+" encontrado, leyendo...")
         self.puntero += size
-        return archivo.read(size)
+        return self.archivo.read(size)
 
-    def close():
-        archivo = open(self.fileName,"r") 
-        archivo.close()
+    def close(self, current = None):
+        print("Cerrando fichero " +self.fileName)
+        self.archivo.close()
 
     def destroy():
         print("Hola")
@@ -35,8 +38,8 @@ class SenderFactoryI(TrawlNet.SenderFactory):
         try:
             prueba = open("./files_sended/"+fileName, 'r').readline()
         except IOError:
-            print("No se encuentra el archivo " +fileName)
-            raise TrawlNet.FileDoesNotExistError("No se encuentra el archivo")
+            print("El archivo \"" +fileName+ "\" no existe.")
+            raise TrawlNet.FileDoesNotExistError("El archivo \"" +fileName+ "\" no existe.")
         else:
             servant = SenderI(fileName)
             proxy = current.adapter.addWithUUID(servant)

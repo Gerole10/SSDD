@@ -41,17 +41,17 @@ class ReceiverI(TrawlNet.Receiver):
             self.puntero += 10
             if len(lectura) < 10:
                 print("Transferencia de "+self.fileName+" completada.")
-                #Cerrar el archivo falta
+                self.sender.close()
                 break
-        
+    
         #Crear PeerInfo(Transfer, filename)
-        #print("Creando peerInfo")
-        #peerInfo = PeerInfoI(self.transfer, self.fileName)
+        print("Creando peerInfo")
+        peerInfo = PeerInfoI(self.transfer, self.fileName)
         #Crear PeerEvent y llamar a peerFinished
-        #print("Creando peerEvent")
-        #peerEvent = PeerEventI()
-        #print("Llamado metodo peerFinished")
-        #peerEvent.peerFinished(peerInfo)
+        print("Creando peerEvent")
+        peerEvent = PeerEventI()
+        print("Llamado metodo peerFinished")
+        peerEvent.peerFinished(peerInfo)
 
 
     def destroy(self, current = None):
@@ -99,8 +99,12 @@ class Client(Ice.Application):
         print(files)
 
         #Generacion de peers
-        receiverList = transfer.createPeers(files)
-        print(receiverList)
+        receiverList = []
+        try:
+            receiverList = transfer.createPeers(files)
+        except TrawlNet.FileDoesNotExistError as e:
+            print(e.info)
+        #print(receiverList)
 
         for receiver in receiverList:
             receiver.start()
