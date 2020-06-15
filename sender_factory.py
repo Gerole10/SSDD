@@ -34,12 +34,14 @@ class SenderFactoryI(TrawlNet.SenderFactory):
 
         try:
             prueba = open("./files_sended/"+fileName, 'r').readline()
-        except FileNotFoundError as e:
-            raise FileNotFoundError("Archivo especificado no encontrado")
-        
-        servant = SenderI(fileName)
-        proxy = current.adapter.addWithUUID(servant)
-        return TrawlNet.SenderPrx.checkedCast(proxy)
+        except IOError:
+            print("No se encuentra el archivo " +fileName)
+            raise TrawlNet.FileDoesNotExistError("No se encuentra el archivo")
+        else:
+            servant = SenderI(fileName)
+            proxy = current.adapter.addWithUUID(servant)
+            return TrawlNet.SenderPrx.checkedCast(proxy)
+
 
 class Server(Ice.Application):
     def run(self, argv):

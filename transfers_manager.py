@@ -19,17 +19,21 @@ class TransferI(TrawlNet.Transfer):
             print("Creacion peer archivo "+file)
             try:
                 sender = self.senderFactory.create(file)
+            except:
+                print("El archivo "+file+" no existe")
+                #raise TrawlNet.FileDoesNotExistError("Excp en createPeers")
+            else:
                 receiver = self.receiverFactory.create(file, sender, self.transfer)
                 self.receiverList.append(receiver)
-            except FileNotFoundError as err:
-                print(err.args)
+
         return self.receiverList
 
     def destroyPeer(self, peerId, current = None):
         print("Destruyendo peer del archivo:"+peerId)
         for receiver in self.receiverList:
             print(receiver)
-            receiver.fileName
+            hola = receiver.getFileName()
+            print(hola)
             #Quiza falte poner el adaptador del receive activo
             #if receiver.fileName == peerId:
              #   print("HAy un igual: "+peerId+" y "+receiver.fileName)

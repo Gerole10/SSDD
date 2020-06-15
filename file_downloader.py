@@ -45,17 +45,20 @@ class ReceiverI(TrawlNet.Receiver):
                 break
         
         #Crear PeerInfo(Transfer, filename)
-        print("Creando peerInfo")
-        peerInfo = PeerInfoI(self.transfer, self.fileName)
+        #print("Creando peerInfo")
+        #peerInfo = PeerInfoI(self.transfer, self.fileName)
         #Crear PeerEvent y llamar a peerFinished
-        print("Creando peerEvent")
-        peerEvent = PeerEventI()
-        print("Llamado metodo peerFinished")
-        peerEvent.peerFinished(peerInfo)
+        #print("Creando peerEvent")
+        #peerEvent = PeerEventI()
+        #print("Llamado metodo peerFinished")
+        #peerEvent.peerFinished(peerInfo)
 
 
-    def destroy():
-        pass
+    def destroy(self, current = None):
+        print("Destruir receiver")
+    
+    def getFileName(self, current = None):
+        return self.fileName
 
 class ReceiverFactoryI(TrawlNet.ReceiverFactory):
     def __init__(self):
@@ -97,11 +100,11 @@ class Client(Ice.Application):
 
         #Generacion de peers
         receiverList = transfer.createPeers(files)
+        print(receiverList)
 
         for receiver in receiverList:
             receiver.start()
         
-        print(receiverList)
         return 0
 
     def createListFiles(argv):
