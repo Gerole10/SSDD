@@ -54,11 +54,13 @@ class ReceiverI(TrawlNet.Receiver):
         peerEvent.peerFinished(peerInfo)
 
 
-    def destroy(self, current = None):
-        print("Destruir receiver")
-    
-    def getFileName(self, current = None):
-        return self.fileName
+    def destroy(self, current):
+        try:
+            print("Destruido adaptador receiver")
+            current.adapter.remove(current.id)
+        except Exception as e:
+            print(e)
+
 
 class ReceiverFactoryI(TrawlNet.ReceiverFactory):
     def __init__(self):

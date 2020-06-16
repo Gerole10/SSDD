@@ -27,9 +27,12 @@ class SenderI(TrawlNet.Sender):
         print("Cerrando fichero " +self.fileName)
         self.archivo.close()
 
-    def destroy():
-        print("Hola")
-        sys.stdout.flush()
+    def destroy(self, current = None):
+        try:
+            print("Destruido adaptador sender")
+            current.adapter.remove(current.id)
+        except Exception as e:
+            print(e)
 
 class SenderFactoryI(TrawlNet.SenderFactory):
     def create(self, fileName, current = None):

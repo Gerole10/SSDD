@@ -37,9 +37,9 @@ class TransferI(TrawlNet.Transfer):
         print("Destruyendo peer del archivo:"+peerId)
         receiver = self.dic[peerId][0]
         print(receiver)
+        receiver.destroy()
         sender = self.dic[peerId][1]
-        print(sender)
-        
+        sender.destroy()
             
     def destroy(self):
         pass
