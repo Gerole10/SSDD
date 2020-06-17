@@ -40,6 +40,10 @@ class TransferI(TrawlNet.Transfer):
         receiver.destroy()
         sender = self.dic[peerId][1]
         sender.destroy()
+        #diccionario.borrar[peerId]
+        #if(diccionario=vacio){
+        # transferEvent.transferFinished
+        #}
             
     def destroy(self):
         pass
@@ -59,7 +63,7 @@ class TransferFactoryI(TrawlNet.TransferFactory):
 class Server(Ice.Application):
     def run(self, argv):
         #Conexion con sender_factory
-        proxySender = self.communicator().stringToProxy(argv[1])
+        proxySender = self.communicator().stringToProxy("senderFactory1 -t -e 1.1 @ SenderFactory1")
         senderFactory = TrawlNet.SenderFactoryPrx.checkedCast(proxySender)
 
         if not senderFactory:

@@ -77,7 +77,7 @@ class Client(Ice.Application):
     def run(self, argv):
 
         #Conexion con transferFactory
-        proxyTransfer = self.communicator().stringToProxy(argv[1])
+        proxyTransfer = self.communicator().stringToProxy("transferFactory1 -t -e 1.1 @ TransferFactory1")
         transferFactory = TrawlNet.TransferFactoryPrx.checkedCast(proxyTransfer)
 
         if not transferFactory:
