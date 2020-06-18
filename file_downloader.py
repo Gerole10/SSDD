@@ -4,26 +4,18 @@
 import sys
 from io import open
 import Ice
+import IceStorm
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
 
 
 
-class PeerEventI(TrawlNet.PeerEvent):
-    def peerFinished(self, peerInfo, current = None):
-        print("Notificando al transfer")
-        peerInfo.transfer.destroyPeer(peerInfo.fileName)
-
-class PeerInfoI(TrawlNet.PeerInfo):
-    def __init__(self, transfer, fileName):
-        self.transfer = transfer
-        self.fileName = fileName
-
 class ReceiverI(TrawlNet.Receiver):
-    def __init__(self, fileName, sender, transfer):
+    def __init__(self, fileName, sender, transfer, peerEvent):
         self.fileName = fileName
         self.sender = sender
         self.transfer = transfer
+        self.peerEvent = peerEvent
         self.puntero = 0
 
     def start(self, current = None):
@@ -43,15 +35,15 @@ class ReceiverI(TrawlNet.Receiver):
                 print("Transferencia de "+self.fileName+" completada.")
                 self.sender.close()
                 break
-    
+        #Aqui se emite el evento PeerFinished
         #Crear PeerInfo(Transfer, filename)
         print("Creando peerInfo")
-        peerInfo = PeerInfoI(self.transfer, self.fileName)
-        #Crear PeerEvent y llamar a peerFinished
-        print("Creando peerEvent")
-        peerEvent = PeerEventI()
+        peerInfo = TrawlNet.PeerInfo()
+        peerInfo.transfer = self.transfer
+        peerInfo.fileName = self.fileName
+        #Llamar a peerFinished
         print("Llamado metodo peerFinished")
-        peerEvent.peerFinished(peerInfo)
+        self.peerEvent.peerFinished(peerInfo)
 
 
     def destroy(self, current):
@@ -63,17 +55,29 @@ class ReceiverI(TrawlNet.Receiver):
 
 
 class ReceiverFactoryI(TrawlNet.ReceiverFactory):
-    def __init__(self):
+    def __init__(self, peerEvent):
         print("Constructor receiverFactory")
+        self.peerEvent = peerEvent
 
     def create(self, fileName, sender, transfer ,current = None):
         print("Creacion receiver "+ fileName)
-        servant = ReceiverI(fileName, sender, transfer)
+        servant = ReceiverI(fileName, sender, transfer, self.peerEvent)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.ReceiverPrx.checkedCast(proxy)
 
 
 class Client(Ice.Application):
+
+    def get_topic_manager_peerEvent(self):
+        key = 'IceStorm.TopicManager.Proxy'
+        proxy = self.communicator().propertyToProxy(key)
+        if proxy is None:
+            print("property {} not set".format(key))
+            return None
+        
+        print("Using IceStorm in: '%s'"%key)
+        return IceStorm.TopicManagerPrx.checkedCast(proxy)
+
     def run(self, argv):
 
         #Conexion con transferFactory
@@ -83,9 +87,26 @@ class Client(Ice.Application):
         if not transferFactory:
             raise RuntimeError('Invalid proxy transferFactory')
 
+        #Creacion topic peerEvent Publisher
+        topic_mgr_peerEvent = self.get_topic_manager_peerEvent()
+        if not topic_mgr_peerEvent:
+            print("Invalid proxy")
+            return 2
+        
+        topic_name_peerEvent = "PeerEventTopic"
+        try:
+            topic_peerEvent = topic_mgr_peerEvent.retrieve(topic_name_peerEvent)
+        except IceStorm.NoSuchTopic:
+            print("no such topic found, creating")
+            topic_peerEvent = topic_mgr_peerEvent.create(topic_name_peerEvent)
+        
+        publisher_peerEvent = topic_peerEvent.getPublisher()
+        peerEvent = TrawlNet.PeerEventPrx.uncheckedCast(publisher_peerEvent)
+
+
         #Creacion proxy receiverFactory
         broker = self.communicator()
-        servant = ReceiverFactoryI()
+        servant = ReceiverFactoryI(peerEvent)
 
         adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))

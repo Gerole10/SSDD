@@ -3,9 +3,14 @@
 
 import sys
 import Ice
+import IceStorm
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
 
+class PeerEventI(TrawlNet.PeerEvent):
+    def peerFinished(self, peerInfo, current = None):
+        print("Notificando al transfer que el Peer ha finalizado")
+        peerInfo.transfer.destroyPeer(peerInfo.fileName) 
 
 class TransferI(TrawlNet.Transfer):
     def __init__(self, receiverFactory, senderFactory, transfer = None):
@@ -61,6 +66,16 @@ class TransferFactoryI(TrawlNet.TransferFactory):
         return transferPrx
 
 class Server(Ice.Application):
+    def get_topic_manager_peerEvent(self):
+        key = 'IceStorm.TopicManager.Proxy'
+        proxy = self.communicator().propertyToProxy(key)
+        if proxy is None:
+            print("property {} not set".format(key))
+            return None
+        
+        print("Using IceStorm in: '%s'"%key)
+        return IceStorm.TopicManagerPrx.checkedCast(proxy)
+
     def run(self, argv):
         #Conexion con sender_factory
         proxySender = self.communicator().stringToProxy("senderFactory1 -t -e 1.1 @ SenderFactory1")
@@ -69,7 +84,25 @@ class Server(Ice.Application):
         if not senderFactory:
             raise RuntimeError('Invalid proxy for senderFactory')
 
-        #senderFactory.create("nombreArchivo")
+        #Creacion topic PeerEvent Subscriber
+        topic_mgr_peerEvent = self.get_topic_manager_peerEvent()
+        if not topic_mgr_peerEvent:
+            print ("Invalid proxy")
+            return 2
+        
+        ic_peerEvent = self.communicator()
+        servant_peerEvent = PeerEventI()
+        adapter_peerEvent = ic_peerEvent.createObjectAdapter("PeerEventAdapter")
+        subscriber_peerEvent = adapter_peerEvent.addWithUUID(servant_peerEvent)
+
+        topic_name_peerEvent = "PeerEventTopic"
+        try:
+            topic_peerEvent = topic_mgr_peerEvent.retrieve(topic_name_peerEvent)
+        except IceStorm.NoSuchTopic:
+            print("no such topic found, creating")
+            topic_peerEvent = topic_mgr_peerEvent.create(topic_name_peerEvent)
+        
+        topic_peerEvent.subscribeAndGetPublisher({}, subscriber_peerEvent)
 
         #Configuracion del proxy
         broker = self.communicator()
@@ -80,9 +113,13 @@ class Server(Ice.Application):
 
         print(proxy, flush=True)
 
+        adapter_peerEvent.activate()
         adapter.activate()
         self.shutdownOnInterrupt()
+        ic_peerEvent.waitForShutdown()
         broker.waitForShutdown()
+
+        topic_peerEvent.unsubscribe(subscriber)
 
         return 0
 
