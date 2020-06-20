@@ -35,11 +35,12 @@ class SenderI(TrawlNet.Sender):
             print(e)
 
 class SenderFactoryI(TrawlNet.SenderFactory):
-    def create(self, fileName, current = None):
+    def create(self, ruta, fileName, current = None):
         print("Creacion Sender para:"+ fileName)
 
         try:
-            prueba = open("./files_sended/"+fileName, 'r').readline()
+            prueba = open("./"+ruta+"/"+fileName, 'r').readline() #Pensado para que introduzca la ruta como el nombre de la carpeta 
+            #y ésta debe estar en el mismo directorio que el resto de archivos
         except IOError:
             print("El archivo \"" +fileName+ "\" no existe.")
             raise TrawlNet.FileDoesNotExistError("El archivo \"" +fileName+ "\" no existe.")
@@ -50,9 +51,11 @@ class SenderFactoryI(TrawlNet.SenderFactory):
 
 
 class Server(Ice.Application):
+    ruta = ""
     def run(self, argv):
+        self.ruta = argv[2]
         broker = self.communicator()
-        servant = SenderFactoryI()
+        servant = SenderFactoryI(self.ruta)
 
         adapter = broker.createObjectAdapter("SenderFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("senderFactory1"))
