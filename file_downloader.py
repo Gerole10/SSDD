@@ -23,12 +23,11 @@ class ReceiverI(TrawlNet.Receiver):
         print(self.sender)
         print(self.transfer)
 
-        ar = open("./files_received/"+self.fileName,"w")
-
+        ar = open("./downloads/"+self.fileName,"w")
+        print("Transfieriendo archivo "+self.fileName+" recibiéndose")
         while True:
             ar.seek(self.puntero)
             lectura = self.sender.receive(10)
-            print("Archivo "+self.fileName+" recibiéndose, escribiendo...")
             ar.write(lectura)
             self.puntero += 10
             if len(lectura) < 10:
@@ -48,7 +47,7 @@ class ReceiverI(TrawlNet.Receiver):
 
     def destroy(self, current):
         try:
-            print("Destruido adaptador receiver")
+            print("Destruido adaptador del receiver "+self.fileName)
             current.adapter.remove(current.id)
         except Exception as e:
             print(e)

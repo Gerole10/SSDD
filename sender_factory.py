@@ -9,15 +9,14 @@ import TrawlNet
 
 
 class SenderI(TrawlNet.Sender):
-    archivo = ""
-
-    def __init__(self, fileName):
+    def __init__(self, path, fileName):
+        self.path = path
         self.fileName = fileName
         self.puntero = 0
-        
+        self.archivo = ""
 
     def receive(self,size,current = None):
-        self.archivo = open("./files_sended/"+self.fileName,"r")
+        self.archivo = open("./"+self.path+self.fileName,"r")
         self.archivo.seek(self.puntero)
         print("Archivo "+self.fileName+" encontrado, leyendo...")
         self.puntero += size
@@ -35,27 +34,27 @@ class SenderI(TrawlNet.Sender):
             print(e)
 
 class SenderFactoryI(TrawlNet.SenderFactory):
-    def create(self, ruta, fileName, current = None):
-        print("Creacion Sender para:"+ fileName)
+    def __init__(self, path):
+            self.path = path
 
+    def create(self, fileName, current = None):
+        print("Creacion Sender para:"+ fileName)
         try:
-            prueba = open("./"+ruta+"/"+fileName, 'r').readline() #Pensado para que introduzca la ruta como el nombre de la carpeta 
-            #y ésta debe estar en el mismo directorio que el resto de archivos
+            prueba = open("./"+self.path+fileName, 'r').readline()
         except IOError:
             print("El archivo \"" +fileName+ "\" no existe.")
             raise TrawlNet.FileDoesNotExistError("El archivo \"" +fileName+ "\" no existe.")
         else:
-            servant = SenderI(fileName)
+            servant = SenderI(self.path, fileName)
             proxy = current.adapter.addWithUUID(servant)
             return TrawlNet.SenderPrx.checkedCast(proxy)
 
 
 class Server(Ice.Application):
-    ruta = ""
     def run(self, argv):
-        self.ruta = argv[2]
+        path = argv[1]
         broker = self.communicator()
-        servant = SenderFactoryI(self.ruta)
+        servant = SenderFactoryI(path)
 
         adapter = broker.createObjectAdapter("SenderFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("senderFactory1"))

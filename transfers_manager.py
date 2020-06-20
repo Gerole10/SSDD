@@ -45,10 +45,12 @@ class TransferI(TrawlNet.Transfer):
         receiver.destroy()
         sender = self.dic[peerId][1]
         sender.destroy()
-        #diccionario.borrar[peerId]
-        #if(diccionario=vacio){
-        # transferEvent.transferFinished
-        #}
+
+        self.dic.pop(peerId)
+        print(len(self.dic))
+        if len(self.dic) == 0:
+            print("Diccionario vacio")
+            #transferEvent.transferFinished()
             
     def destroy(self):
         pass
