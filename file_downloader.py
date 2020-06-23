@@ -8,7 +8,12 @@ import IceStorm
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
 
-
+class TransferEventI(TrawlNet.TransferEvent):
+    def transferFinished(self, transfer, current = None):
+        print("Notificando al transfer que el Peer ha finalizado")
+        transfer.destroy()
+        #Pasar por parametros la clase y compararlo
+        #broker.shutdown
 
 class ReceiverI(TrawlNet.Receiver):
     def __init__(self, fileName, sender, transfer, peerEvent):
@@ -131,12 +136,14 @@ class Client(Ice.Application):
         for receiver in receiverList:
             receiver.start()
         
-        return 0
+        self.shutdownOnInterrupt()
+        broker.waitForShutdown()
+        #broker.shutdown
 
     def createListFiles(argv):
         files = []
-        if len(argv) > 2:
-            for i in range(2, len(argv)):
+        if len(argv) > 1:
+            for i in range(1, len(argv)):
                 files.append(argv[i])
         else:
             print("Introduzca los archivos por parametros")

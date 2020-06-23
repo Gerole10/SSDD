@@ -17,38 +17,38 @@ class TransferI(TrawlNet.Transfer):
         self.receiverFactory = receiverFactory
         self.senderFactory = senderFactory
         self.transfer = transfer
-        self.dic = {}
+        self.peersDictionary = {}
 
     def createPeers(self, files, current = None):
         receiverList = []
-        for file in files:
-            print("Creacion peer archivo "+file)
+        for fileName in files:
+            print("Creacion peer archivo "+fileName)
             try:
-                sender = self.senderFactory.create(file)
+                sender = self.senderFactory.create(fileName)
             except TrawlNet.FileDoesNotExistError as e:
                 print(e.info)
-                raise TrawlNet.FileDoesNotExistError(e.info)
+                raise e
             else:
-                receiver = self.receiverFactory.create(file, sender, self.transfer)
+                receiver = self.receiverFactory.create(fileName, sender, self.transfer)
                 receiverList.append(receiver)
 
-                self.dic.setdefault(file,[receiver, sender])
+                self.peersDictionary.setdefault(fileName,[receiver, sender])
                 print("Imprimiendo diccionario")
-                print(self.dic[file])
+                print(self.peersDictionary[fileName])
 
         return receiverList
 
     def destroyPeer(self, peerId, current = None):
         print("Destruyendo peer del archivo:"+peerId)
-        receiver = self.dic[peerId][0]
+        receiver = self.peersDictionary[peerId][0]
         print(receiver)
         receiver.destroy()
-        sender = self.dic[peerId][1]
+        sender = self.peersDictionary[peerId][1]
         sender.destroy()
 
-        self.dic.pop(peerId)
-        print(len(self.dic))
-        if len(self.dic) == 0:
+        self.peersDictionary.pop(peerId)
+        print(len(self.peersDictionary))
+        if len(self.peersDictionary) == 0:
             print("Diccionario vacio")
             #transferEvent.transferFinished()
             
@@ -91,7 +91,7 @@ class Server(Ice.Application):
         if not topic_mgr_peerEvent:
             print ("Invalid proxy")
             return 2
-        
+        #Usar mismo adaptador!!
         ic_peerEvent = self.communicator()
         servant_peerEvent = PeerEventI()
         adapter_peerEvent = ic_peerEvent.createObjectAdapter("PeerEventAdapter")

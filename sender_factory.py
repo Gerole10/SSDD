@@ -15,6 +15,7 @@ class SenderI(TrawlNet.Sender):
         self.puntero = 0
         self.archivo = ""
 
+        #CAMBIAR y capturar si ya existe
     def receive(self,size,current = None):
         self.archivo = open("./"+self.path+self.fileName,"r")
         self.archivo.seek(self.puntero)
