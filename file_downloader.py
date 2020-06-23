@@ -9,11 +9,16 @@ Ice.loadSlice('-I. --all trawlnet.ice')
 import TrawlNet
 
 class TransferEventI(TrawlNet.TransferEvent):
+    def __init__(self, transfer, broker):
+        self.broker = broker
+        self.transfer = transfer
+
     def transferFinished(self, transfer, current = None):
-        print("Notificando al transfer que el Peer ha finalizado")
-        transfer.destroy()
-        #Pasar por parametros la clase y compararlo
-        #broker.shutdown
+        print("Destruyendo el transfer")
+        if self.transfer == transfer:
+            transfer.destroy()
+            print("Tranfer destruido")
+            self.broker.shutdown()
 
 class ReceiverI(TrawlNet.Receiver):
     def __init__(self, fileName, sender, transfer, peerEvent):
@@ -72,7 +77,7 @@ class ReceiverFactoryI(TrawlNet.ReceiverFactory):
 
 class Client(Ice.Application):
 
-    def get_topic_manager_peerEvent(self):
+    def get_topic_manager(self):
         key = 'IceStorm.TopicManager.Proxy'
         proxy = self.communicator().propertyToProxy(key)
         if proxy is None:
@@ -81,6 +86,15 @@ class Client(Ice.Application):
         
         print("Using IceStorm in: '%s'"%key)
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
+
+    def createFileList(self, argv):
+        files = []
+        if len(argv) > 1:
+            for i in range(1, len(argv)):
+                files.append(argv[i])
+        else:
+            print("Introduzca los archivos por parametros")
+        return files
 
     def run(self, argv):
 
@@ -92,7 +106,7 @@ class Client(Ice.Application):
             raise RuntimeError('Invalid proxy transferFactory')
 
         #Creacion topic peerEvent Publisher
-        topic_mgr_peerEvent = self.get_topic_manager_peerEvent()
+        topic_mgr_peerEvent = self.get_topic_manager()
         if not topic_mgr_peerEvent:
             print("Invalid proxy")
             return 2
@@ -121,8 +135,29 @@ class Client(Ice.Application):
         print(transfer)    
         adapter.activate()
 
+        #Creacion topic TranferEvent Subscriber
+        topic_mgr_transferEvent = self.get_topic_manager()
+        if not topic_mgr_transferEvent:
+            print ("Invalid proxy")
+            return 2
+        #Usar mismo adaptador!!
+        ic_transferEvent = self.communicator()
+        servant_transferEvent = TransferEventI(transfer, broker)
+        adapter_transferEvent = ic_transferEvent.createObjectAdapter("TransferEventAdapter")
+        subscriber_transferEvent = adapter_transferEvent.addWithUUID(servant_transferEvent)
+
+        topic_name_transferEvent = "TransferEventTopic"
+        try:
+            topic_transferEvent = topic_mgr_transferEvent.retrieve(topic_name_transferEvent)
+        except IceStorm.NoSuchTopic:
+            print("no such topic found, creating")
+            topic_transferEvent = topic_mgr_transferEvent.create(topic_name_transferEvent)
+        
+        topic_transferEvent.subscribeAndGetPublisher({}, subscriber_transferEvent)
+
+
         #Creacion lista archivos
-        files = Client.createListFiles(argv)
+        files = self.createFileList(argv)
         print(files)
 
         #Generacion de peers
@@ -136,17 +171,12 @@ class Client(Ice.Application):
         for receiver in receiverList:
             receiver.start()
         
-        self.shutdownOnInterrupt()
-        broker.waitForShutdown()
-        #broker.shutdown
+        print("El cliente esta esperando a que se finalice el transfer")
 
-    def createListFiles(argv):
-        files = []
-        if len(argv) > 1:
-            for i in range(1, len(argv)):
-                files.append(argv[i])
-        else:
-            print("Introduzca los archivos por parametros")
-        return files
+        adapter_transferEvent.activate()
+        self.shutdownOnInterrupt()
+        ic_transferEvent.waitForShutdown()
+        broker.waitForShutdown()
+
         
 sys.exit(Client().main(sys.argv))

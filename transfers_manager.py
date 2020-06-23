@@ -13,9 +13,10 @@ class PeerEventI(TrawlNet.PeerEvent):
         peerInfo.transfer.destroyPeer(peerInfo.fileName) 
 
 class TransferI(TrawlNet.Transfer):
-    def __init__(self, receiverFactory, senderFactory, transfer = None):
+    def __init__(self, receiverFactory, senderFactory, transferEvent, transfer = None):
         self.receiverFactory = receiverFactory
         self.senderFactory = senderFactory
+        self.transferEvent = transferEvent
         self.transfer = transfer
         self.peersDictionary = {}
 
@@ -50,17 +51,22 @@ class TransferI(TrawlNet.Transfer):
         print(len(self.peersDictionary))
         if len(self.peersDictionary) == 0:
             print("Diccionario vacio")
-            #transferEvent.transferFinished()
+            self.transferEvent.transferFinished(self.transfer)
             
-    def destroy(self):
-        pass
+    def destroy(self, current):
+        try:
+            print("Destruido adaptador del transfer ")
+            current.adapter.remove(current.id)
+        except Exception as e:
+            print(e)
 
 class TransferFactoryI(TrawlNet.TransferFactory):
-    def __init__(self, senderFactory):
+    def __init__(self, senderFactory, transferEvent):
         self.senderFactory = senderFactory
+        self.transferEvent = transferEvent
 
     def newTransfer(self, receiverFactory, current = None):
-        servant = TransferI(receiverFactory, self.senderFactory)
+        servant = TransferI(receiverFactory, self.senderFactory, self.transferEvent)
         proxy = current.adapter.addWithUUID(servant)
         transferPrx = TrawlNet.TransferPrx.checkedCast(proxy)
         servant.transfer = transferPrx
@@ -68,7 +74,7 @@ class TransferFactoryI(TrawlNet.TransferFactory):
         return transferPrx
 
 class Server(Ice.Application):
-    def get_topic_manager_peerEvent(self):
+    def get_topic_manager(self):
         key = 'IceStorm.TopicManager.Proxy'
         proxy = self.communicator().propertyToProxy(key)
         if proxy is None:
@@ -87,7 +93,7 @@ class Server(Ice.Application):
             raise RuntimeError('Invalid proxy for senderFactory')
 
         #Creacion topic PeerEvent Subscriber
-        topic_mgr_peerEvent = self.get_topic_manager_peerEvent()
+        topic_mgr_peerEvent = self.get_topic_manager()
         if not topic_mgr_peerEvent:
             print ("Invalid proxy")
             return 2
@@ -106,9 +112,25 @@ class Server(Ice.Application):
         
         topic_peerEvent.subscribeAndGetPublisher({}, subscriber_peerEvent)
 
+        #Creacion topic transferEvent Publisher
+        topic_mgr_transferEvent = self.get_topic_manager()
+        if not topic_mgr_transferEvent:
+            print("Invalid proxy")
+            return 2
+        
+        topic_name_transferEvent = "TransferEventTopic"
+        try:
+            topic_transferEvent = topic_mgr_transferEvent.retrieve(topic_name_transferEvent)
+        except IceStorm.NoSuchTopic:
+            print("no such topic found, creating")
+            topic_transferEvent = topic_mgr_transferEvent.create(topic_name_transferEvent)
+        
+        publisher_transferEvent = topic_transferEvent.getPublisher()
+        transferEvent = TrawlNet.TransferEventPrx.uncheckedCast(publisher_transferEvent)
+
         #Configuracion del proxy
         broker = self.communicator()
-        servant = TransferFactoryI(senderFactory)
+        servant = TransferFactoryI(senderFactory, transferEvent)
 
         adapter = broker.createObjectAdapter("TransferFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("transferFactory1"))
@@ -120,8 +142,6 @@ class Server(Ice.Application):
         self.shutdownOnInterrupt()
         ic_peerEvent.waitForShutdown()
         broker.waitForShutdown()
-
-        topic_peerEvent.unsubscribe(subscriber)
 
         return 0
 
