@@ -85,8 +85,9 @@ class Server(Ice.Application):
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
 
     def run(self, argv):
+        broker = self.communicator()
         #Conexion con sender_factory
-        proxySender = self.communicator().stringToProxy("senderFactory1 -t -e 1.1 @ SenderFactory1")
+        proxySender = broker.stringToProxy("senderFactory1 -t -e 1.1 @ SenderFactory1")
         senderFactory = TrawlNet.SenderFactoryPrx.checkedCast(proxySender)
 
         if not senderFactory:
@@ -97,10 +98,9 @@ class Server(Ice.Application):
         if not topic_mgr_peerEvent:
             print ("Invalid proxy")
             return 2
-        #Usar mismo adaptador!!
-        ic_peerEvent = self.communicator()
+
         servant_peerEvent = PeerEventI()
-        adapter_peerEvent = ic_peerEvent.createObjectAdapter("PeerEventAdapter")
+        adapter_peerEvent = broker.createObjectAdapter("PeerEventAdapter")
         subscriber_peerEvent = adapter_peerEvent.addWithUUID(servant_peerEvent)
 
         topic_name_peerEvent = "PeerEventTopic"
@@ -129,7 +129,6 @@ class Server(Ice.Application):
         transferEvent = TrawlNet.TransferEventPrx.uncheckedCast(publisher_transferEvent)
 
         #Configuracion del proxy
-        broker = self.communicator()
         servant = TransferFactoryI(senderFactory, transferEvent)
 
         adapter = broker.createObjectAdapter("TransferFactoryAdapter")
@@ -140,7 +139,6 @@ class Server(Ice.Application):
         adapter_peerEvent.activate()
         adapter.activate()
         self.shutdownOnInterrupt()
-        ic_peerEvent.waitForShutdown()
         broker.waitForShutdown()
 
         return 0

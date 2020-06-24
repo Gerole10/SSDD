@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from io import open
+import os
+import binascii
 import Ice
 Ice.loadSlice('-I. --all trawlnet.ice') 
 import TrawlNet
@@ -12,20 +13,15 @@ class SenderI(TrawlNet.Sender):
     def __init__(self, path, fileName):
         self.path = path
         self.fileName = fileName
-        self.puntero = 0
-        self.archivo = ""
+        self.file_ = open("./"+self.path+self.fileName, "rb")
 
         #CAMBIAR y capturar si ya existe
     def receive(self,size,current = None):
-        self.archivo = open("./"+self.path+self.fileName,"r")
-        self.archivo.seek(self.puntero)
-        print("Archivo "+self.fileName+" encontrado, leyendo...")
-        self.puntero += size
-        return self.archivo.read(size)
+        return str(binascii.b2a_base64(self.file_.read(size), newline = False))
 
     def close(self, current = None):
         print("Cerrando fichero " +self.fileName)
-        self.archivo.close()
+        self.file_.close()
 
     def destroy(self, current = None):
         try:
@@ -41,7 +37,7 @@ class SenderFactoryI(TrawlNet.SenderFactory):
     def create(self, fileName, current = None):
         print("Creacion Sender para:"+ fileName)
         try:
-            prueba = open("./"+self.path+fileName, 'r').readline()
+            prueba = open("./"+self.path+fileName, 'rb').readline()
         except IOError:
             print("El archivo \"" +fileName+ "\" no existe.")
             raise TrawlNet.FileDoesNotExistError("El archivo \"" +fileName+ "\" no existe.")

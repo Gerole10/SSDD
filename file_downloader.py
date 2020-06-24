@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from io import open
+import os
+import binascii
 import Ice
 import IceStorm
 Ice.loadSlice('-I. --all trawlnet.ice') 
@@ -26,24 +27,27 @@ class ReceiverI(TrawlNet.Receiver):
         self.sender = sender
         self.transfer = transfer
         self.peerEvent = peerEvent
-        self.puntero = 0
 
     def start(self, current = None):
         print("Recevier del archivo: "+self.fileName)
         print(self.sender)
         print(self.transfer)
 
-        ar = open("./downloads/"+self.fileName,"w")
-        print("Transfieriendo archivo "+self.fileName+" recibiéndose")
-        while True:
-            ar.seek(self.puntero)
-            lectura = self.sender.receive(10)
-            ar.write(lectura)
-            self.puntero += 10
-            if len(lectura) < 10:
-                print("Transferencia de "+self.fileName+" completada.")
-                self.sender.close()
-                break
+        remote_EOF = False
+        BLOCK_SIZE = 1024
+
+        with open(os.path.join("./downloads/", self.fileName), "wb") as file_:
+            remote_EOF = False
+            while not remote_EOF:
+                data = self.sender.receive(BLOCK_SIZE)
+                if len(data) > 1:
+                    data = data[1:]
+                data = binascii.a2b_base64(data)
+                remote_EOF = len(data) < BLOCK_SIZE
+                if data:
+                    file_.write(data)
+            self.sender.close()
+
         #Aqui se emite el evento PeerFinished
         #Crear PeerInfo(Transfer, filename)
         print("Creando peerInfo")
@@ -97,9 +101,9 @@ class Client(Ice.Application):
         return files
 
     def run(self, argv):
-
+        broker = self.communicator()
         #Conexion con transferFactory
-        proxyTransfer = self.communicator().stringToProxy("transferFactory1 -t -e 1.1 @ TransferFactory1")
+        proxyTransfer = broker.stringToProxy("transferFactory1 -t -e 1.1 @ TransferFactory1")
         transferFactory = TrawlNet.TransferFactoryPrx.checkedCast(proxyTransfer)
 
         if not transferFactory:
@@ -123,7 +127,6 @@ class Client(Ice.Application):
 
 
         #Creacion proxy receiverFactory
-        broker = self.communicator()
         servant = ReceiverFactoryI(peerEvent)
 
         adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
@@ -140,10 +143,9 @@ class Client(Ice.Application):
         if not topic_mgr_transferEvent:
             print ("Invalid proxy")
             return 2
-        #Usar mismo adaptador!!
-        ic_transferEvent = self.communicator()
+
         servant_transferEvent = TransferEventI(transfer, broker)
-        adapter_transferEvent = ic_transferEvent.createObjectAdapter("TransferEventAdapter")
+        adapter_transferEvent = broker.createObjectAdapter("TransferEventAdapter")
         subscriber_transferEvent = adapter_transferEvent.addWithUUID(servant_transferEvent)
 
         topic_name_transferEvent = "TransferEventTopic"
@@ -175,7 +177,6 @@ class Client(Ice.Application):
 
         adapter_transferEvent.activate()
         self.shutdownOnInterrupt()
-        ic_transferEvent.waitForShutdown()
         broker.waitForShutdown()
 
         
