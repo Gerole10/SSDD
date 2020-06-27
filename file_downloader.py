@@ -6,7 +6,7 @@ import os
 import binascii
 import Ice
 import IceStorm
-Ice.loadSlice('-I. --all trawlnet.ice') 
+Ice.loadSlice('-I. --all trawlnet.ice')
 import TrawlNet
 
 class TransferEventI(TrawlNet.TransferEvent):
@@ -14,11 +14,9 @@ class TransferEventI(TrawlNet.TransferEvent):
         self.broker = broker
         self.transfer = transfer
 
-    def transferFinished(self, transfer, current = None):
-        print("Destruyendo el transfer")
+    def transferFinished(self, transfer, current=None):
         if self.transfer == transfer:
             transfer.destroy()
-            print("Tranfer destruido")
             self.broker.shutdown()
 
 class ReceiverI(TrawlNet.Receiver):
@@ -28,14 +26,11 @@ class ReceiverI(TrawlNet.Receiver):
         self.transfer = transfer
         self.peerEvent = peerEvent
 
-    def start(self, current = None):
-        print("Recevier del archivo: "+self.fileName)
-        print(self.sender)
-        print(self.transfer)
-
+    def start(self, current=None):
         remote_EOF = False
         BLOCK_SIZE = 1024
-
+        #Transferencia del archivo.
+        print("Transferiendo el archivo "+self.fileName+".")
         with open(os.path.join("./downloads/", self.fileName), "wb") as file_:
             remote_EOF = False
             while not remote_EOF:
@@ -47,17 +42,13 @@ class ReceiverI(TrawlNet.Receiver):
                 if data:
                     file_.write(data)
             self.sender.close()
-
-        #Aqui se emite el evento PeerFinished
+        print("Transferencia del archivo "+self.fileName+" completada.")
         #Crear PeerInfo(Transfer, filename)
-        print("Creando peerInfo")
         peerInfo = TrawlNet.PeerInfo()
         peerInfo.transfer = self.transfer
         peerInfo.fileName = self.fileName
         #Llamar a peerFinished
-        print("Llamado metodo peerFinished")
         self.peerEvent.peerFinished(peerInfo)
-
 
     def destroy(self, current):
         try:
@@ -69,11 +60,9 @@ class ReceiverI(TrawlNet.Receiver):
 
 class ReceiverFactoryI(TrawlNet.ReceiverFactory):
     def __init__(self, peerEvent):
-        print("Constructor receiverFactory")
         self.peerEvent = peerEvent
 
-    def create(self, fileName, sender, transfer ,current = None):
-        print("Creacion receiver "+ fileName)
+    def create(self, fileName, sender, transfer, current=None):
         servant = ReceiverI(fileName, sender, transfer, self.peerEvent)
         proxy = current.adapter.addWithUUID(servant)
         return TrawlNet.ReceiverPrx.checkedCast(proxy)
@@ -87,8 +76,8 @@ class Client(Ice.Application):
         if proxy is None:
             print("property {} not set".format(key))
             return None
-        
-        print("Using IceStorm in: '%s'"%key)
+
+        print("Usando IceStorm en: '%s'"%key)
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
 
     def createFileList(self, argv):
@@ -97,7 +86,7 @@ class Client(Ice.Application):
             for i in range(1, len(argv)):
                 files.append(argv[i])
         else:
-            print("Introduzca los archivos por parametros")
+            print("Introduzca los archivos por parametros.")
         return files
 
     def run(self, argv):
@@ -112,36 +101,34 @@ class Client(Ice.Application):
         #Creacion topic peerEvent Publisher
         topic_mgr_peerEvent = self.get_topic_manager()
         if not topic_mgr_peerEvent:
-            print("Invalid proxy")
+            print("Proxy invalido.")
             return 2
-        
+
         topic_name_peerEvent = "PeerEventTopic"
         try:
             topic_peerEvent = topic_mgr_peerEvent.retrieve(topic_name_peerEvent)
         except IceStorm.NoSuchTopic:
-            print("no such topic found, creating")
+            print("Topic no encontrado, creándolo.")
             topic_peerEvent = topic_mgr_peerEvent.create(topic_name_peerEvent)
-        
+
         publisher_peerEvent = topic_peerEvent.getPublisher()
         peerEvent = TrawlNet.PeerEventPrx.uncheckedCast(publisher_peerEvent)
 
+        print("Canal de eventos para el PeerEvent configurado.")
 
         #Creacion proxy receiverFactory
         servant = ReceiverFactoryI(peerEvent)
-
         adapter = broker.createObjectAdapter("ReceiverFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("receiverFactory1"))
-        print(proxy)
 
         #Creacion transfer
         transfer = transferFactory.newTransfer(TrawlNet.ReceiverFactoryPrx.checkedCast(proxy))
-        print(transfer)    
         adapter.activate()
 
         #Creacion topic TranferEvent Subscriber
         topic_mgr_transferEvent = self.get_topic_manager()
         if not topic_mgr_transferEvent:
-            print ("Invalid proxy")
+            print("Proxy invalido.")
             return 2
 
         servant_transferEvent = TransferEventI(transfer, broker)
@@ -152,15 +139,15 @@ class Client(Ice.Application):
         try:
             topic_transferEvent = topic_mgr_transferEvent.retrieve(topic_name_transferEvent)
         except IceStorm.NoSuchTopic:
-            print("no such topic found, creating")
+            print("Topic no encontrado, creándolo.")
             topic_transferEvent = topic_mgr_transferEvent.create(topic_name_transferEvent)
-        
+
         topic_transferEvent.subscribeAndGetPublisher({}, subscriber_transferEvent)
 
+        print("Canal de eventos para el TransferEvent configurado.")
 
         #Creacion lista archivos
         files = self.createFileList(argv)
-        print(files)
 
         #Generacion de peers
         receiverList = []
@@ -168,16 +155,17 @@ class Client(Ice.Application):
             receiverList = transfer.createPeers(files)
         except TrawlNet.FileDoesNotExistError as e:
             print(e.info)
-        #print(receiverList)
 
         for receiver in receiverList:
             receiver.start()
-        
-        print("El cliente esta esperando a que se finalice el transfer")
+
+        print("Esperando la finalización del transfer.")
 
         adapter_transferEvent.activate()
         self.shutdownOnInterrupt()
         broker.waitForShutdown()
 
-        
+        print("Cliente finalizado.")
+
+
 sys.exit(Client().main(sys.argv))

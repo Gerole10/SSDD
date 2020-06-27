@@ -5,7 +5,7 @@ import sys
 import os
 import binascii
 import Ice
-Ice.loadSlice('-I. --all trawlnet.ice') 
+Ice.loadSlice('-I. --all trawlnet.ice')
 import TrawlNet
 
 
@@ -15,27 +15,25 @@ class SenderI(TrawlNet.Sender):
         self.fileName = fileName
         self.file_ = open("./"+self.path+self.fileName, "rb")
 
-        #CAMBIAR y capturar si ya existe
-    def receive(self,size,current = None):
-        return str(binascii.b2a_base64(self.file_.read(size), newline = False))
+    def receive(self, size, current=None):
+        return str(binascii.b2a_base64(self.file_.read(size), newline=False))
 
-    def close(self, current = None):
+    def close(self, current=None):
         print("Cerrando fichero " +self.fileName)
         self.file_.close()
 
-    def destroy(self, current = None):
+    def destroy(self, current=None):
         try:
-            print("Destruido adaptador sender")
+            print("Destruido adaptador del sender para el archivo "+self.fileName+".")
             current.adapter.remove(current.id)
         except Exception as e:
             print(e)
 
 class SenderFactoryI(TrawlNet.SenderFactory):
     def __init__(self, path):
-            self.path = path
+        self.path = path
 
-    def create(self, fileName, current = None):
-        print("Creacion Sender para:"+ fileName)
+    def create(self, fileName, current=None):
         try:
             prueba = open("./"+self.path+fileName, 'rb').readline()
         except IOError:
@@ -56,11 +54,12 @@ class Server(Ice.Application):
         adapter = broker.createObjectAdapter("SenderFactoryAdapter")
         proxy = adapter.add(servant, broker.stringToIdentity("senderFactory1"))
 
-        print(proxy, flush=True)
-
+        print("Servidor sender_factory desplegado.")
         adapter.activate()
         self.shutdownOnInterrupt()
         broker.waitForShutdown()
+
+        print("Finalizado el servidor sender_factory.")
 
         return 0
 
